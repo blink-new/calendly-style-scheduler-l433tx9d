@@ -125,14 +125,46 @@ export function CalendarGrid({ isOwner = false }: CalendarGridProps) {
           : slot
       ))
 
-      // Send confirmation email (mock for now)
-      console.log('Sending confirmation email to:', bookingData.guestEmail)
-      console.log('Booking details:', booking)
+      // Send email confirmation
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-booking-confirmation`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({
+            booking: {
+              id: booking.id,
+              guestName: bookingData.guestName,
+              guestEmail: bookingData.guestEmail,
+              meetingTitle: bookingData.meetingTitle,
+              meetingDescription: bookingData.meetingDescription,
+              date: selectedSlot.date,
+              startTime: selectedSlot.startTime,
+              endTime: selectedSlot.endTime
+            }
+          })
+        })
 
-      toast({
-        title: 'Booking Confirmed!',
-        description: `Meeting scheduled for ${selectedSlot.startTime} - ${selectedSlot.endTime}`,
-      })
+        if (response.ok) {
+          toast({
+            title: 'Booking Confirmed! 🎉',
+            description: `Meeting "${bookingData.meetingTitle}" scheduled for ${selectedSlot.startTime} - ${selectedSlot.endTime}. Check your email for confirmation.`,
+          })
+        } else {
+          toast({
+            title: 'Booking Confirmed! 🎉',
+            description: `Meeting "${bookingData.meetingTitle}" scheduled for ${selectedSlot.startTime} - ${selectedSlot.endTime}. (Email confirmation may be delayed)`,
+          })
+        }
+      } catch (emailError) {
+        console.error('Email error:', emailError)
+        toast({
+          title: 'Booking Confirmed! 🎉',
+          description: `Meeting "${bookingData.meetingTitle}" scheduled for ${selectedSlot.startTime} - ${selectedSlot.endTime}. (Email confirmation may be delayed)`,
+        })
+      }
 
       setIsBookingModalOpen(false)
       setSelectedSlot(null)
